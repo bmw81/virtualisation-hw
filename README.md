@@ -50,7 +50,7 @@ packer init config.pkr.hcl
 ![Plugin installed](./img/plugin_installed.png)
 
 - [yandex cloud cli](https://cloud.yandex.com/ru/docs/cli/quickstart) Так же инициализируйте профиль с помощью `yc init`.
-
+![yc init](./img/yc_init.png)
 `Приведите ответ в свободной форме........`
 
 1. `Заполните здесь этапы выполнения, если требуется ....`

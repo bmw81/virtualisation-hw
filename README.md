@@ -72,31 +72,69 @@ docker version && docker compose version
 1. Отредактируйте файл [mydebian.json.pkr.hcl](/src/mydebian.json.pkr.hcl) или mydebian.jsonl в директории src (packer умеет и в json, и в hcl форматы):
 - добавьте в скрипт установку docker. Возьмите скрипт установки для debian из [документации](https://docs.docker.com/engine/install/debian/) к docker,
 - дополнительно установите в данном образе htop и tmux.(не забудьте про ключ автоматического подтверждения установки для apt)
+```
+build {
+  sources = ["source.yandex.debian_docker"]
+
+  provisioner "shell" {
+    inline = ["echo 'Starting provisioning...'"]
+  }
+
+  provisioner "shell" {
+    inline = [
+      # Отключаем проблемный репозиторий bullseye-backports
+      "sudo sed -i '/bullseye-backports/d' /etc/apt/sources.list",
+      "sudo sed -i '/bullseye-backports/d' /etc/apt/sources.list.d/*.list 2>/dev/null || true",
+      
+      # Обновление пакетного менеджера (игнорируя ошибки backports)
+      "sudo apt-get update -y --allow-releaseinfo-change 2>/dev/null | grep -v 'Failed'",
+      
+      # Установка зависимостей для apt HTTPS
+      "sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release",
+      
+      # Добавление GPG-ключа Docker
+      "curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
+      
+      # Добавление репозитория Docker
+      "echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable\" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
+      
+      # Обновление пакетов после добавления репозитория
+      "sudo apt-get update -y",
+      
+      # Установка Docker Engine
+      "sudo apt-get install -y docker-ce docker-ce-cli containerd.io",
+      
+      # Установка htop и tmux с автоматическим подтверждением
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get install -y htop tmux",
+      
+      # Добавление пользователя debian в группу docker (чтобы не использовать sudo)
+      "sudo usermod -aG docker debian",
+      
+      # Включение автозапуска Docker (опционально)
+      "sudo systemctl enable docker",
+      
+      # Проверка установки
+      "docker --version",
+      "htop --version",
+      "tmux -V"
+    ]
+  }
+
+  provisioner "shell" {
+    inline = ["echo 'Provisioning completed successfully!'"]
+  }
+}
+```
 2. Найдите свой образ в web консоли yandex_cloud
+![My Image](/img/my_image.png)
 3. Необязательное задание(*): найдите в документации yandex cloud как найти свой образ с помощью утилиты командной строки "yc cli".
+```
+yc compute image list
+```
 4. Создайте новую ВМ (минимальные параметры) в облаке, используя данный образ.
+![Create VM in YC](/img/create_vm_in_yc.png)
+- При создании машины в web-консоли необходимо указать пользователя `debian` и публичный ssh-ключ локальной (хостовой) машины
 5. Подключитесь по ssh и убедитесь в наличии установленного docker.
+![Docker on VM](/img/docker_on_vm.png)
 6. Удалите ВМ и образ.
 7. **ВНИМАНИЕ!** Никогда не выкладываете oauth token от облака в git-репозиторий! Утечка секретного токена может привести к финансовым потерям. После выполнения задания обязательно удалите секретные данные из файла mydebian.json и mydebian.json.pkr.hcl. (замените содержимое токена на "ххххх")
-
-### Задание 4
-
-`Приведите ответ в свободной форме........`
-
-1. `Заполните здесь этапы выполнения, если требуется ....`
-2. `Заполните здесь этапы выполнения, если требуется ....`
-3. `Заполните здесь этапы выполнения, если требуется ....`
-4. `Заполните здесь этапы выполнения, если требуется ....`
-5. `Заполните здесь этапы выполнения, если требуется ....`
-6. 
-
-```
-Поле для вставки кода...
-....
-....
-....
-....
-```
-
-`При необходимости прикрепитe сюда скриншоты
-![Название скриншота](ссылка на скриншот)`
